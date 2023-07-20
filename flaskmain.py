@@ -12,12 +12,12 @@ from flask_cors import CORS
 
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)  
 
 # Classify fresh/rotten fn
 def ret_fresh(res):
-    threshold_fresh = 0.90  # set according to standards
-    threshold_medium = 0.50  # set according to standards
+    threshold_fresh = 0.90  
+    threshold_medium = 0.50  
     if res > threshold_fresh:
         return "The item is VERY FRESH!"
     elif threshold_fresh > res > threshold_medium:
@@ -27,42 +27,38 @@ def ret_fresh(res):
     
 
 def pre_proc_img(image_data):
-    # Convert the JpegImageFile object to bytes
+
     byte_stream = io.BytesIO()
-    image_data = image_data.convert('RGB')  # Convert to RGB
+    image_data = image_data.convert('RGB')  #RGB Convert
     image_data.save(byte_stream, format='JPEG')
     image_bytes = byte_stream.getvalue()
 
-    # img data to a np arr and read using cv2
     img_array = np.frombuffer(image_bytes, dtype=np.uint8)
     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-    # Cnvrt BGR to RGB & resize
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = cv2.resize(img, (100, 100))
 
-    # Preprocess the image
     img = img / 255.0
     img = np.expand_dims(img, axis=0)
     return img
 
 def evaluate_rotten_vs_fresh(image_path):
-    # Load and predict using the model
     model = load_model('api/rottenvsfresh98pval.h5')
     prediction = model.predict(pre_proc_img(image_path))
 
     return prediction[0][0]
 
 
-def ident_type(img): #identify type of fruit/veg using pytorch
-    # Load the pretrained model
+def ident_type(img): 
     model = models.mobilenet_v2(weights=None)
-    num_classes = 36  # Update with the number of classes in your model
+    num_classes = 36  
     model.classifier[1] = nn.Linear(model.last_channel, num_classes)
     model.load_state_dict(torch.load('api/modelforclass.pth', map_location=torch.device('cpu')))
     model.eval()
 
-    # Define the data transforms and class labels
+#TRANSFORM
+
     transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
